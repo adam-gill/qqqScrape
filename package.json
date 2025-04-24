@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "API to fetch QQQ ETF holdings",
   "scripts": {
-    "dev": "vercel dev",
+    "dev": "ts-node server.ts",
     "deploy": "vercel deploy --prod"
   },
   "dependencies": {

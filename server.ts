@@ -1,18 +1,17 @@
-// DEPRECATED
-
-import * as fs from 'fs';
-import puppeteer from 'puppeteer';
 import express from 'express';
 import cors from 'cors';
+import * as fs from 'fs';
+import puppeteer from 'puppeteer';
 
-// Configuration
+// Configuration - matching your working qqqScrape.ts
 const url = 'https://www.invesco.com/qqq-etf/en/about.html';
 const tableBodyClass = 'view-all-holdings__table-body';
 const outputFile = 'qqq_holdings.json';
 const PORT = process.env.PORT || 3000;
 const CACHE_INTERVAL = 3600000; // 1 hour in milliseconds
 
-// Define the ticker map
+
+// Define the ticker map - same as in qqqScrape.ts
 const tickerMap = {
     "Apple Inc": "AAPL",
     "Microsoft Corp": "MSFT",
@@ -54,6 +53,7 @@ const tickerMap = {
     "Mondelez International Inc Class A": "MDLZ",
     "Lam Research Corp": "LRCX",
     "Cintas Corp": "CTAS",
+    "Strategy Class A": "STGY",
     "Micron Technology Inc": "MU",
     "O'Reilly Automotive Inc": "ORLY",
     "AppLovin Corp Ordinary Shares - Class A": "APP",
@@ -66,24 +66,68 @@ const tickerMap = {
     "Marriott International Inc Class A": "MAR",
     "Regeneron Pharmaceuticals Inc": "REGN",
     "PayPal Holdings Inc": "PYPL",
-    "ASML Holding NV ADR": "ASML"
-    // Add more as needed
-};
+    "ASML Holding NV ADR": "ASML",
+    "Roper Technologies Inc": "ROP",
+    "Copart Inc": "CPRT",
+    "Monster Beverage Corp": "MNST",
+    "American Electric Power Co Inc": "AEP",
+    "Autodesk Inc": "ADSK",
+    "CSX Corp": "CSX",
+    "Paychex Inc": "PAYX",
+    "Airbnb Inc Ordinary Shares - Class A": "ABNB",
+    "Workday Inc Class A": "WDAY",
+    "Charter Communications Inc Class A": "CHTR",
+    "Keurig Dr Pepper Inc": "KDP",
+    "Exelon Corp": "EXC",
+    "PACCAR Inc": "PCAR",
+    "Marvell Technology Inc": "MRVL",
+    "Fastenal Co": "FAST",
+    "NXP Semiconductors NV": "NXPI",
+    "Ross Stores Inc": "ROST",
+    "Axon Enterprise Inc": "AXON",
+    "Xcel Energy Inc": "XEL",
+    "Coca-Cola Europacific Partners PLC": "CCEP",
+    "Verisk Analytics Inc": "VRSK",
+    "AstraZeneca PLC ADR": "AZN",
+    "Diamondback Energy Inc": "FANG",
+    "Take-Two Interactive Software Inc": "TTWO",
+    "Electronic Arts Inc": "EA",
+    "The Kraft Heinz Co": "KHC",
+    "Baker Hughes Co Class A": "BKR",
+    "Cognizant Technology Solutions Corp Class A": "CTSH",
+    "IDEXX Laboratories Inc": "IDXX",
+    "Atlassian Corp A": "TEAM",
+    "CoStar Group Inc": "CSGP",
+    "Old Dominion Freight Line Inc Ordinary Shares": "ODFL",
+    "Lululemon Athletica Inc": "LULU",
+    "Zscaler Inc": "ZS",
+    "Datadog Inc Class A": "DDOG",
+    "GE HealthCare Technologies Inc Common Stock": "GEHC",
+    "Ansys Inc": "ANSS",
+    "DexCom Inc": "DXCM",
+    "The Trade Desk Inc Class A": "TTD",
+    "Microchip Technology Inc": "MCHP",
+    "CDW Corp": "CDW",
+    "Warner Bros. Discovery Inc Ordinary Shares - Class A": "WBD",
+    "GLOBALFOUNDRIES Inc": "GFS",
+    "Biogen Inc": "BIIB",
+    "ON Semiconductor Corp": "ON",
+    "ARM Holdings PLC ADR": "ARM",
+    "MongoDB Inc Class A": "MDB",
+  };
 
-// Global variable to store the holdings data
+// Global variable to store the holdings data - same caching mechanism
 let holdingsData: any = null;
 let lastFetchTime = 0;
 
-/**
- * Scrapes the QQQ ETF holdings table from Invesco's website
- */
+// Use the EXACT same scraping function that works in qqqScrape.ts
 async function scrapeQQQHoldingsTable(): Promise<any> {
   let browser = null;
   
   try {
     console.log(`Fetching holdings data from: ${url}`);
     
-    // Launch a headless browser
+    // Launch a headless browser - USING THE SAME CONFIGURATION THAT WORKS
     browser = await puppeteer.launch({
       headless: true,
     });
@@ -123,7 +167,7 @@ async function scrapeQQQHoldingsTable(): Promise<any> {
           const percent = percentText ? parseFloat(percentText.replace('%', '')) : 0;
           
           return {
-            position: index,
+            position: index + 1,
             company: companyName,
             percent: percent,
             id: row.id || ''
@@ -186,7 +230,7 @@ async function scrapeQQQHoldingsTable(): Promise<any> {
       // Update positions
       result.items = filteredItems?.map((item, index) => ({
         ...item,
-        position: index
+        position: index + 1
       }));
       
       console.log(`Combined GOOG (${googPercent}%) and GOOGL (${googlPercent}%) into a single entry with ${totalPercent}%`);
@@ -210,7 +254,7 @@ async function scrapeQQQHoldingsTable(): Promise<any> {
   }
 }
 
-// Function to get holdings data (with caching)
+// Function to get holdings data (with caching) - same as qqqScrape.ts
 async function getHoldingsData(): Promise<any> {
   const currentTime = Date.now();
   
@@ -252,7 +296,13 @@ const app = express();
 // Enable CORS
 app.use(cors());
 
-// API endpoint to get holdings data
+// Add request logging middleware
+app.use((req, res, next) => {
+  console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
+  next();
+});
+
+// API endpoints - directly implement them the same way as in qqqScrape.ts
 app.get('/holdings', async (req, res) => {
   try {
     const data = await getHoldingsData();
@@ -262,18 +312,32 @@ app.get('/holdings', async (req, res) => {
   }
 });
 
-// Health check endpoint
 app.get('/health', (req, res) => {
+  res.json({ status: 'OK', timestamp: new Date().toISOString() });
+});
+
+// Also support the /api/* routes for compatibility with Vercel
+app.get('/api/holdings', async (req, res) => {
+  try {
+    const data = await getHoldingsData();
+    res.json(data);
+  } catch (error: any) {
+    res.status(500).json({ error: 'Failed to fetch holdings data', message: error.message });
+  }
+});
+
+app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', timestamp: new Date().toISOString() });
 });
 
 // Start server
 app.listen(PORT, () => {
-  console.log(`QQQ Holdings API running on port ${PORT}`);
+  console.log(`Local development server running at http://localhost:${PORT}`);
+  console.log(`- Holdings endpoint: http://localhost:${PORT}/holdings`);
+  console.log(`- Health endpoint: http://localhost:${PORT}/health`);
   
-  // Initial data fetch
+  // Initial data fetch just like in qqqScrape.ts
   getHoldingsData().catch(error => {
     console.error('Initial data fetch failed:', error);
   });
 });
-
