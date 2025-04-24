@@ -249,7 +249,7 @@ export async function scrapeQQQHoldingsTable(): Promise<any> {
       // Update positions
       result.items = filteredItems.map((item: any, index: number) => ({
         ...item,
-        position: index,
+        position: index + 1,
       }));
     }
 
