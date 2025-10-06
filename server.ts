@@ -198,24 +198,17 @@ async function scrapeQQQHoldingsTable(): Promise<any> {
       };
     });
 
-    // Combine GOOG and GOOGL entries
-    let googIndex = -1;
-    let googlIndex = -1;
-    let googPercent = 0;
-    let googlPercent = 0;
-
     // Find both Google entries
     let totalGOOG = 0;
     result.items?.forEach((item: { ticker: string; percent: number }) => {
       if (item.ticker === "GOOG") {
         totalGOOG += item.percent;
-        googPercent = item.percent;
       }
     });
 
     // Create a new array without both Google entries
     const filteredItems = result.items?.filter(
-      (item, index) => item.ticker !== "GOOG"
+      (item: { ticker: string; }) => item.ticker !== "GOOG"
     );
 
     // Add the combined entry
@@ -239,7 +232,7 @@ async function scrapeQQQHoldingsTable(): Promise<any> {
     }));
 
     console.log(
-      `Combined GOOG (${googPercent}%) and GOOGL (${googlPercent}%) into a single entry with ${totalGOOG}%`
+      `Combined GOOGand GOOGL into a single entry with ${totalGOOG}%`
     );
 
     // Save the data to file as backup
