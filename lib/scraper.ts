@@ -1,4 +1,3 @@
-import * as fs from "fs";
 import { CACHE_INTERVAL, outputFile, tableBodyClass, tickerMap, url } from "./config";
 
 // Import puppeteer-core instead of puppeteer for serverless
@@ -170,16 +169,6 @@ export async function scrapeQQQHoldingsTable(): Promise<any> {
       `Combined GOOG and GOOGL into a single entry with ${totalGOOG}%`
     );
 
-    // Save the data to file as backup (only if fs is available)
-    try {
-      fs.writeFileSync(outputFile, JSON.stringify(result, null, 2));
-      console.log(
-        `Data saved to ${outputFile} with ${result?.items?.length} items`
-      );
-    } catch (fsError) {
-      console.warn("Unable to write to file (may not be supported in serverless):", fsError);
-    }
-
     // Return the result object for API use
     return result;
   } catch (error) {
@@ -214,17 +203,6 @@ export async function getHoldingsData(): Promise<any> {
     if (holdingsData) {
       console.log("Error fetching fresh data, using cached data");
       return holdingsData;
-    }
-
-    // If we have no cached data, try to load from file
-    try {
-      const fileData = fs.readFileSync(outputFile, "utf8");
-      holdingsData = JSON.parse(fileData);
-      console.log("Loaded holdings data from file");
-      return holdingsData;
-    } catch (fileError) {
-      // If all else fails, throw the original error
-      throw error;
     }
   }
 }
