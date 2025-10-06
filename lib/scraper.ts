@@ -1,13 +1,20 @@
 import * as fs from "fs";
-import puppeteer from "puppeteer";
 import { CACHE_INTERVAL, outputFile, tableBodyClass, tickerMap, url } from "./config";
-// @sparticuz/chromium provides a Chromium build compatible with Vercel's
-// serverless environment. We'll try to require it and use its executablePath
-// and recommended args when present.
+
+// Import puppeteer-core instead of puppeteer for serverless
+let puppeteer: any;
 let chromium: any = null;
+
+try {
+  // Try to use puppeteer-core for production
+  puppeteer = require("puppeteer-core");
+} catch (err) {
+  // Fall back to regular puppeteer for local development
+  puppeteer = require("puppeteer");
+}
+
 try {
   // require at runtime so local dev (without the package) still works
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
   chromium = require("@sparticuz/chromium");
 } catch (err) {
   chromium = null;
@@ -24,30 +31,34 @@ export async function scrapeQQQHoldingsTable(): Promise<any> {
   try {
     console.log(`Fetching holdings data from: ${url}`);
 
-    // Launch a headless browser. In Vercel/serverless, use @sparticuz/chromium's
-    // executablePath and recommended args. Locally, fall back to puppeteer's
-    // bundled Chromium.
     const launchOptions: any = {
       headless: true,
       args: [
-        // These flags are generally required in many serverless environments
         "--no-sandbox",
         "--disable-setuid-sandbox",
         "--disable-dev-shm-usage",
         "--single-process",
         "--disable-accelerated-2d-canvas",
+        "--disable-gpu",
       ],
     };
 
+    // Use chromium package in production (Vercel)
     if (chromium && chromium.executablePath) {
-      launchOptions.executablePath = chromium.executablePath;
-      // If the chromium package exposes args, merge them
-      if (chromium.args && Array.isArray(chromium.args)) {
-        launchOptions.args = Array.from(new Set([...launchOptions.args, ...chromium.args]));
+      try {
+        const executablePath = await chromium.executablePath();
+        launchOptions.executablePath = executablePath;
+        
+        if (chromium.args && Array.isArray(chromium.args)) {
+          launchOptions.args = Array.from(new Set([...launchOptions.args, ...chromium.args]));
+        }
+        
+        launchOptions.headless = chromium.headless ?? true;
+        console.log("Using @sparticuz/chromium with executablePath:", executablePath);
+      } catch (chromiumError) {
+        console.error("Error getting chromium executablePath:", chromiumError);
+        throw new Error("Failed to initialize Chromium for serverless environment");
       }
-      // On Vercel set headless to true (they run headless)
-      launchOptions.headless = chromium.headless ?? true;
-      console.log("Using @sparticuz/chromium for executablePath", chromium.executablePath);
     } else {
       console.log("@sparticuz/chromium not available; using puppeteer default");
     }
@@ -156,14 +167,18 @@ export async function scrapeQQQHoldingsTable(): Promise<any> {
     }));
 
     console.log(
-      `Combined GOOGand GOOGL into a single entry with ${totalGOOG}%`
+      `Combined GOOG and GOOGL into a single entry with ${totalGOOG}%`
     );
 
-    // Save the data to file as backup
-    fs.writeFileSync(outputFile, JSON.stringify(result, null, 2));
-    console.log(
-      `Data saved to ${outputFile} with ${result?.items?.length} items`
-    );
+    // Save the data to file as backup (only if fs is available)
+    try {
+      fs.writeFileSync(outputFile, JSON.stringify(result, null, 2));
+      console.log(
+        `Data saved to ${outputFile} with ${result?.items?.length} items`
+      );
+    } catch (fsError) {
+      console.warn("Unable to write to file (may not be supported in serverless):", fsError);
+    }
 
     // Return the result object for API use
     return result;
