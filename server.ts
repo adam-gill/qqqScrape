@@ -1,120 +1,118 @@
-import express from 'express';
-import cors from 'cors';
-import * as fs from 'fs';
-import puppeteer from 'puppeteer';
+import express from "express";
+import cors from "cors";
+import * as fs from "fs";
+import puppeteer from "puppeteer";
 
 // Configuration - matching your working qqqScrape.ts
-const url = 'https://www.invesco.com/qqq-etf/en/about.html';
-const tableBodyClass = 'view-all-holdings__table-body';
-const outputFile = 'qqq_holdings.json';
+const url = "https://www.invesco.com/qqq-etf/en/about.html";
+const tableBodyClass = "view-all-holdings__table-body";
+const outputFile = "qqq_holdings.json";
 const PORT = process.env.PORT || 3000;
 const CACHE_INTERVAL = 3600000; // 1 hour in milliseconds
 
-
 // Define the ticker map - same as in qqqScrape.ts
 const tickerMap = {
-    "Apple Inc": "AAPL",
-    "Microsoft Corp": "MSFT",
-    "NVIDIA Corp": "NVDA",
-    "Amazon.com Inc": "AMZN",
-    "Broadcom Inc": "AVGO",
-    "Meta Platforms Inc Class A": "META",
-    "Netflix Inc": "NFLX",
-    "Costco Wholesale Corp": "COST",
-    "Tesla Inc": "TSLA",
-    "Alphabet Inc Class A": "GOOGL",
-    "Alphabet Inc Class C": "GOOG",
-    "T-Mobile US Inc": "TMUS",
-    "Palantir Technologies Inc Ordinary Shares - Class A": "PLTR",
-    "Cisco Systems Inc": "CSCO",
-    "Linde PLC": "LIN",
-    "PepsiCo Inc": "PEP",
-    "Intuitive Surgical Inc": "ISRG",
-    "Intuit Inc": "INTU",
-    "Qualcomm Inc": "QCOM",
-    "Booking Holdings Inc": "BKNG",
-    "Adobe Inc": "ADBE",
-    "Amgen Inc": "AMGN",
-    "Advanced Micro Devices Inc": "AMD",
-    "Texas Instruments Inc": "TXN",
-    "Gilead Sciences Inc": "GILD",
-    "Comcast Corp Class A": "CMCSA",
-    "Honeywell International Inc": "HON",
-    "Vertex Pharmaceuticals Inc": "VRTX",
-    "Automatic Data Processing Inc": "ADP",
-    "Applied Materials Inc": "AMAT",
-    "Palo Alto Networks Inc": "PANW",
-    "MercadoLibre Inc": "MELI",
-    "Starbucks Corp": "SBUX",
-    "Analog Devices Inc": "ADI",
-    "CrowdStrike Holdings Inc Class A": "CRWD",
-    "Intel Corp": "INTC",
-    "KLA Corp": "KLAC",
-    "Mondelez International Inc Class A": "MDLZ",
-    "Lam Research Corp": "LRCX",
-    "Cintas Corp": "CTAS",
-    "Strategy Class A": "STGY",
-    "Micron Technology Inc": "MU",
-    "O'Reilly Automotive Inc": "ORLY",
-    "AppLovin Corp Ordinary Shares - Class A": "APP",
-    "Fortinet Inc": "FTNT",
-    "Cadence Design Systems Inc": "CDNS",
-    "DoorDash Inc Ordinary Shares - Class A": "DASH",
-    "PDD Holdings Inc ADR": "PDD",
-    "Constellation Energy Corp": "CEG",
-    "Synopsys Inc": "SNPS",
-    "Marriott International Inc Class A": "MAR",
-    "Regeneron Pharmaceuticals Inc": "REGN",
-    "PayPal Holdings Inc": "PYPL",
-    "ASML Holding NV ADR": "ASML",
-    "Roper Technologies Inc": "ROP",
-    "Copart Inc": "CPRT",
-    "Monster Beverage Corp": "MNST",
-    "American Electric Power Co Inc": "AEP",
-    "Autodesk Inc": "ADSK",
-    "CSX Corp": "CSX",
-    "Paychex Inc": "PAYX",
-    "Airbnb Inc Ordinary Shares - Class A": "ABNB",
-    "Workday Inc Class A": "WDAY",
-    "Charter Communications Inc Class A": "CHTR",
-    "Keurig Dr Pepper Inc": "KDP",
-    "Exelon Corp": "EXC",
-    "PACCAR Inc": "PCAR",
-    "Marvell Technology Inc": "MRVL",
-    "Fastenal Co": "FAST",
-    "NXP Semiconductors NV": "NXPI",
-    "Ross Stores Inc": "ROST",
-    "Axon Enterprise Inc": "AXON",
-    "Xcel Energy Inc": "XEL",
-    "Coca-Cola Europacific Partners PLC": "CCEP",
-    "Verisk Analytics Inc": "VRSK",
-    "AstraZeneca PLC ADR": "AZN",
-    "Diamondback Energy Inc": "FANG",
-    "Take-Two Interactive Software Inc": "TTWO",
-    "Electronic Arts Inc": "EA",
-    "The Kraft Heinz Co": "KHC",
-    "Baker Hughes Co Class A": "BKR",
-    "Cognizant Technology Solutions Corp Class A": "CTSH",
-    "IDEXX Laboratories Inc": "IDXX",
-    "Atlassian Corp A": "TEAM",
-    "CoStar Group Inc": "CSGP",
-    "Old Dominion Freight Line Inc Ordinary Shares": "ODFL",
-    "Lululemon Athletica Inc": "LULU",
-    "Zscaler Inc": "ZS",
-    "Datadog Inc Class A": "DDOG",
-    "GE HealthCare Technologies Inc Common Stock": "GEHC",
-    "Ansys Inc": "ANSS",
-    "DexCom Inc": "DXCM",
-    "The Trade Desk Inc Class A": "TTD",
-    "Microchip Technology Inc": "MCHP",
-    "CDW Corp": "CDW",
-    "Warner Bros. Discovery Inc Ordinary Shares - Class A": "WBD",
-    "GLOBALFOUNDRIES Inc": "GFS",
-    "Biogen Inc": "BIIB",
-    "ON Semiconductor Corp": "ON",
-    "ARM Holdings PLC ADR": "ARM",
-    "MongoDB Inc Class A": "MDB",
-  };
+  "Apple Inc": "AAPL",
+  "Microsoft Corp": "MSFT",
+  "NVIDIA Corp": "NVDA",
+  "Amazon.com Inc": "AMZN",
+  "Broadcom Inc": "AVGO",
+  "Meta Platforms Inc": "META",
+  "Netflix Inc": "NFLX",
+  "Costco Wholesale Corp": "COST",
+  "Tesla Inc": "TSLA",
+  "Alphabet Inc": "GOOG",
+  "T-Mobile US Inc": "TMUS",
+  "Palantir Technologies Inc": "PLTR",
+  "Cisco Systems Inc": "CSCO",
+  "Linde PLC": "LIN",
+  "PepsiCo Inc": "PEP",
+  "Intuitive Surgical Inc": "ISRG",
+  "Intuit Inc": "INTU",
+  "Qualcomm Inc": "QCOM",
+  "Booking Holdings Inc": "BKNG",
+  "Adobe Inc": "ADBE",
+  "Amgen Inc": "AMGN",
+  "Advanced Micro Devices Inc": "AMD",
+  "Texas Instruments Inc": "TXN",
+  "Gilead Sciences Inc": "GILD",
+  "Comcast Corp Class A": "CMCSA",
+  "Honeywell International Inc": "HON",
+  "Vertex Pharmaceuticals Inc": "VRTX",
+  "Automatic Data Processing Inc": "ADP",
+  "Applied Materials Inc": "AMAT",
+  "Palo Alto Networks Inc": "PANW",
+  "MercadoLibre Inc": "MELI",
+  "Starbucks Corp": "SBUX",
+  "Analog Devices Inc": "ADI",
+  "CrowdStrike Holdings Inc Class A": "CRWD",
+  "Intel Corp": "INTC",
+  "KLA Corp": "KLAC",
+  "Mondelez International Inc Class A": "MDLZ",
+  "Lam Research Corp": "LRCX",
+  "Cintas Corp": "CTAS",
+  "Strategy Class A": "STGY",
+  "Micron Technology Inc": "MU",
+  "O'Reilly Automotive Inc": "ORLY",
+  "AppLovin Corp Ordinary Shares - Class A": "APP",
+  "Fortinet Inc": "FTNT",
+  "Cadence Design Systems Inc": "CDNS",
+  "DoorDash Inc Ordinary Shares - Class A": "DASH",
+  "PDD Holdings Inc ADR": "PDD",
+  "Constellation Energy Corp": "CEG",
+  "Synopsys Inc": "SNPS",
+  "Marriott International Inc Class A": "MAR",
+  "Regeneron Pharmaceuticals Inc": "REGN",
+  "PayPal Holdings Inc": "PYPL",
+  "ASML Holding NV ADR": "ASML",
+  "Roper Technologies Inc": "ROP",
+  "Copart Inc": "CPRT",
+  "Monster Beverage Corp": "MNST",
+  "American Electric Power Co Inc": "AEP",
+  "Autodesk Inc": "ADSK",
+  "CSX Corp": "CSX",
+  "Paychex Inc": "PAYX",
+  "Airbnb Inc Ordinary Shares - Class A": "ABNB",
+  "Workday Inc Class A": "WDAY",
+  "Charter Communications Inc Class A": "CHTR",
+  "Keurig Dr Pepper Inc": "KDP",
+  "Exelon Corp": "EXC",
+  "PACCAR Inc": "PCAR",
+  "Marvell Technology Inc": "MRVL",
+  "Fastenal Co": "FAST",
+  "NXP Semiconductors NV": "NXPI",
+  "Ross Stores Inc": "ROST",
+  "Axon Enterprise Inc": "AXON",
+  "Xcel Energy Inc": "XEL",
+  "Coca-Cola Europacific Partners PLC": "CCEP",
+  "Verisk Analytics Inc": "VRSK",
+  "AstraZeneca PLC ADR": "AZN",
+  "Diamondback Energy Inc": "FANG",
+  "Take-Two Interactive Software Inc": "TTWO",
+  "Electronic Arts Inc": "EA",
+  "The Kraft Heinz Co": "KHC",
+  "Baker Hughes Co Class A": "BKR",
+  "Cognizant Technology Solutions Corp Class A": "CTSH",
+  "IDEXX Laboratories Inc": "IDXX",
+  "Atlassian Corp A": "TEAM",
+  "CoStar Group Inc": "CSGP",
+  "Old Dominion Freight Line Inc Ordinary Shares": "ODFL",
+  "Lululemon Athletica Inc": "LULU",
+  "Zscaler Inc": "ZS",
+  "Datadog Inc Class A": "DDOG",
+  "GE HealthCare Technologies Inc Common Stock": "GEHC",
+  "Ansys Inc": "ANSS",
+  "DexCom Inc": "DXCM",
+  "The Trade Desk Inc Class A": "TTD",
+  "Microchip Technology Inc": "MCHP",
+  "CDW Corp": "CDW",
+  "Warner Bros. Discovery Inc Ordinary Shares - Class A": "WBD",
+  "GLOBALFOUNDRIES Inc": "GFS",
+  "Biogen Inc": "BIIB",
+  "ON Semiconductor Corp": "ON",
+  "ARM Holdings PLC ADR": "ARM",
+  "MongoDB Inc Class A": "MDB",
+};
 
 // Global variable to store the holdings data - same caching mechanism
 let holdingsData: any = null;
@@ -123,133 +121,142 @@ let lastFetchTime = 0;
 // Use the EXACT same scraping function that works in qqqScrape.ts
 async function scrapeQQQHoldingsTable(): Promise<any> {
   let browser = null;
-  
+
   try {
     console.log(`Fetching holdings data from: ${url}`);
-    
+
     // Launch a headless browser - USING THE SAME CONFIGURATION THAT WORKS
     browser = await puppeteer.launch({
       headless: true,
     });
-    
+
     const page = await browser.newPage();
     await page.setViewport({ width: 1366, height: 768 });
-    
-    await page.goto(url, { 
-      waitUntil: 'networkidle2',
-      timeout: 60000
+
+    await page.goto(url, {
+      waitUntil: "networkidle2",
+      timeout: 60000,
     });
-    
+
     // Wait for the table to load
-    await page.waitForSelector(`tbody.${tableBodyClass}`, { timeout: 30000 })
-      .catch(() => console.warn('Timeout waiting for table body, continuing anyway...'));
-    
+    await page
+      .waitForSelector(`tbody.${tableBodyClass}`, { timeout: 30000 })
+      .catch(() =>
+        console.warn("Timeout waiting for table body, continuing anyway...")
+      );
+
     // Give extra time for dynamic content
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+
     // Extract data from the table
     const result = await page.evaluate((tableClass) => {
       const tableBody = document.querySelector(`tbody.${tableClass}`);
-      
+
       if (!tableBody) {
         return { error: `Table body with class "${tableClass}" not found` };
       }
-      
-      const rows = Array.from(tableBody.querySelectorAll('tr'));
-      
+
+      const rows = Array.from(tableBody.querySelectorAll("tr"));
+
       return {
         itemCount: rows.length,
         items: rows.map((row, index) => {
-          const companyCell = row.querySelector('td:first-child span');
-          const percentCell = row.querySelector('td:last-child');
-          const companyName = companyCell ? companyCell.textContent?.trim() : '';
-          const percentText = percentCell ? percentCell.textContent?.trim() : '0%';
-          const percent = percentText ? parseFloat(percentText.replace('%', '')) : 0;
-          
+          const companyCell = row.querySelector("td:first-child span");
+          const percentCell = row.querySelector("td:last-child");
+          const companyName = companyCell
+            ? companyCell.textContent?.trim()
+            : "";
+          const percentText = percentCell
+            ? percentCell.textContent?.trim()
+            : "0%";
+          const percent = percentText
+            ? parseFloat(percentText.replace("%", ""))
+            : 0;
+
           return {
             position: index + 1,
             company: companyName,
             percent: percent,
-            id: row.id || ''
+            id: row.id || "",
           };
-        })
+        }),
       };
     }, tableBodyClass);
-    
+
     if (result.error) {
       throw new Error(result.error);
     }
-    
+
     // Add ticker symbols to each item
-    result.items = result.items?.map(item => {
-        const companyName = item.company || '';
-        return {
-          ...item,
-          ticker: companyName ? (tickerMap[companyName as keyof typeof tickerMap] || companyName) : ''
-        };
-      });
-    
+    result.items = result.items?.map((item) => {
+      const companyName = item.company || "";
+      return {
+        ...item,
+        ticker: companyName
+          ? tickerMap[companyName as keyof typeof tickerMap] || companyName
+          : "",
+      };
+    });
+
     // Combine GOOG and GOOGL entries
     let googIndex = -1;
     let googlIndex = -1;
     let googPercent = 0;
     let googlPercent = 0;
-    
+
     // Find both Google entries
-    result.items?.forEach((item: any, index) => {
-      if (item.ticker === 'GOOG') {
-        googIndex = index;
+    let totalGOOG = 0;
+    result.items?.forEach((item: { ticker: string; percent: number }) => {
+      if (item.ticker === "GOOG") {
+        totalGOOG += item.percent;
         googPercent = item.percent;
-      } else if (item.ticker === 'GOOGL') {
-        googlIndex = index;
-        googlPercent = item.percent;
       }
     });
-    
-    // If both exist, combine them
-    if (googIndex !== -1 && googlIndex !== -1) {
-      const totalPercent = googPercent + googlPercent;
-      
-      // Create a new array without both Google entries
-      const filteredItems = result.items?.filter((_, index) => 
-        index !== googIndex && index !== googlIndex
-      );
-      
-      // Add the combined entry
-      filteredItems?.push({
-        position: filteredItems.length,
-        company: "Alphabet Inc Class C",
-        ticker: "GOOG",
-        percent: totalPercent,
-        id: "F00000SVTK"
-      });
-      
-      // Sort by percentage (descending)
-      filteredItems?.sort((a, b) => b.percent - a.percent);
-      
-      // Update positions
-      result.items = filteredItems?.map((item, index) => ({
-        ...item,
-        position: index + 1
-      }));
-      
-      console.log(`Combined GOOG (${googPercent}%) and GOOGL (${googlPercent}%) into a single entry with ${totalPercent}%`);
-    }
-    
+
+    // Create a new array without both Google entries
+    const filteredItems = result.items?.filter(
+      (item, index) => item.ticker !== "GOOG"
+    );
+
+    // Add the combined entry
+    filteredItems?.push({
+      position: filteredItems.length,
+      company: "Alphabet Inc",
+      ticker: "GOOG",
+      percent: totalGOOG,
+      id: "F00000SVTK",
+    });
+
+    // Sort by percentage (descending)
+    filteredItems?.sort(
+      (a: { percent: number }, b: { percent: number }) => b.percent - a.percent
+    );
+
+    // Update positions
+    result.items = filteredItems?.map((item, index) => ({
+      ...item,
+      position: index + 1,
+    }));
+
+    console.log(
+      `Combined GOOG (${googPercent}%) and GOOGL (${googlPercent}%) into a single entry with ${totalGOOG}%`
+    );
+
     // Save the data to file as backup
     fs.writeFileSync(outputFile, JSON.stringify(result, null, 2));
-    console.log(`Data saved to ${outputFile} with ${result?.items?.length} items`);
-    
+    console.log(
+      `Data saved to ${outputFile} with ${result?.items?.length} items`
+    );
+
     // Return the result object for API use
     return result;
-    
   } catch (error) {
-    console.error('Error scraping QQQ holdings:', error);
+    console.error("Error scraping QQQ holdings:", error);
     throw error;
   } finally {
     if (browser) {
       await browser.close();
-      console.log('Browser closed');
+      console.log("Browser closed");
     }
   }
 }
@@ -257,31 +264,31 @@ async function scrapeQQQHoldingsTable(): Promise<any> {
 // Function to get holdings data (with caching) - same as qqqScrape.ts
 async function getHoldingsData(): Promise<any> {
   const currentTime = Date.now();
-  
+
   // If we have cached data and it's less than CACHE_INTERVAL old, use it
-  if (holdingsData && (currentTime - lastFetchTime < CACHE_INTERVAL)) {
-    console.log('Using cached holdings data');
+  if (holdingsData && currentTime - lastFetchTime < CACHE_INTERVAL) {
+    console.log("Using cached holdings data");
     return holdingsData;
   }
-  
+
   // Otherwise, fetch fresh data
   try {
-    console.log('Fetching fresh holdings data');
+    console.log("Fetching fresh holdings data");
     holdingsData = await scrapeQQQHoldingsTable();
     lastFetchTime = currentTime;
     return holdingsData;
   } catch (error) {
     // If there's an error fetching fresh data and we have cached data, use that
     if (holdingsData) {
-      console.log('Error fetching fresh data, using cached data');
+      console.log("Error fetching fresh data, using cached data");
       return holdingsData;
     }
-    
+
     // If we have no cached data, try to load from file
     try {
-      const fileData = fs.readFileSync(outputFile, 'utf8');
+      const fileData = fs.readFileSync(outputFile, "utf8");
       holdingsData = JSON.parse(fileData);
-      console.log('Loaded holdings data from file');
+      console.log("Loaded holdings data from file");
       return holdingsData;
     } catch (fileError) {
       // If all else fails, throw the original error
@@ -303,31 +310,35 @@ app.use((req, res, next) => {
 });
 
 // API endpoints - directly implement them the same way as in qqqScrape.ts
-app.get('/holdings', async (req, res) => {
+app.get("/holdings", async (req, res) => {
   try {
     const data = await getHoldingsData();
     res.json(data);
   } catch (error: any) {
-    res.status(500).json({ error: 'Failed to fetch holdings data', message: error.message });
+    res
+      .status(500)
+      .json({ error: "Failed to fetch holdings data", message: error.message });
   }
 });
 
-app.get('/health', (req, res) => {
-  res.json({ status: 'OK', timestamp: new Date().toISOString() });
+app.get("/health", (req, res) => {
+  res.json({ status: "OK", timestamp: new Date().toISOString() });
 });
 
 // Also support the /api/* routes for compatibility with Vercel
-app.get('/api/holdings', async (req, res) => {
+app.get("/api/holdings", async (req, res) => {
   try {
     const data = await getHoldingsData();
     res.json(data);
   } catch (error: any) {
-    res.status(500).json({ error: 'Failed to fetch holdings data', message: error.message });
+    res
+      .status(500)
+      .json({ error: "Failed to fetch holdings data", message: error.message });
   }
 });
 
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'OK', timestamp: new Date().toISOString() });
+app.get("/api/health", (req, res) => {
+  res.json({ status: "OK", timestamp: new Date().toISOString() });
 });
 
 // Start server
@@ -335,9 +346,9 @@ app.listen(PORT, () => {
   console.log(`Local development server running at http://localhost:${PORT}`);
   console.log(`- Holdings endpoint: http://localhost:${PORT}/holdings`);
   console.log(`- Health endpoint: http://localhost:${PORT}/health`);
-  
+
   // Initial data fetch just like in qqqScrape.ts
-  getHoldingsData().catch(error => {
-    console.error('Initial data fetch failed:', error);
+  getHoldingsData().catch((error) => {
+    console.error("Initial data fetch failed:", error);
   });
 });
