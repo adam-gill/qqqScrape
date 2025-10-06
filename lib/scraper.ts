@@ -1,115 +1,17 @@
 import * as fs from "fs";
 import puppeteer from "puppeteer";
-
-// Configuration - matching your working qqqScrape.ts
-const url = "https://www.invesco.com/qqq-etf/en/about.html";
-const tableBodyClass = "view-all-holdings__table-body";
-const outputFile = "qqq_holdings.json";
-const CACHE_INTERVAL = 3600000; // 1 hour in milliseconds
-
-// Define the ticker map - same as in qqqScrape.ts
-const tickerMap = {
-  "Apple Inc": "AAPL",
-  "Microsoft Corp": "MSFT",
-  "NVIDIA Corp": "NVDA",
-  "Amazon.com Inc": "AMZN",
-  "Broadcom Inc": "AVGO",
-  "Meta Platforms Inc": "META",
-  "Netflix Inc": "NFLX",
-  "Costco Wholesale Corp": "COST",
-  "Tesla Inc": "TSLA",
-  "Alphabet Inc": "GOOG",
-  "T-Mobile US Inc": "TMUS",
-  "Palantir Technologies Inc": "PLTR",
-  "Cisco Systems Inc": "CSCO",
-  "Linde PLC": "LIN",
-  "PepsiCo Inc": "PEP",
-  "Intuitive Surgical Inc": "ISRG",
-  "Intuit Inc": "INTU",
-  "Qualcomm Inc": "QCOM",
-  "Booking Holdings Inc": "BKNG",
-  "Adobe Inc": "ADBE",
-  "Amgen Inc": "AMGN",
-  "Advanced Micro Devices Inc": "AMD",
-  "Texas Instruments Inc": "TXN",
-  "Gilead Sciences Inc": "GILD",
-  "Comcast Corp Class A": "CMCSA",
-  "Honeywell International Inc": "HON",
-  "Vertex Pharmaceuticals Inc": "VRTX",
-  "Automatic Data Processing Inc": "ADP",
-  "Applied Materials Inc": "AMAT",
-  "Palo Alto Networks Inc": "PANW",
-  "MercadoLibre Inc": "MELI",
-  "Starbucks Corp": "SBUX",
-  "Analog Devices Inc": "ADI",
-  "CrowdStrike Holdings Inc Class A": "CRWD",
-  "Intel Corp": "INTC",
-  "KLA Corp": "KLAC",
-  "Mondelez International Inc Class A": "MDLZ",
-  "Lam Research Corp": "LRCX",
-  "Cintas Corp": "CTAS",
-  "Strategy Class A": "STGY",
-  "Micron Technology Inc": "MU",
-  "O'Reilly Automotive Inc": "ORLY",
-  "AppLovin Corp Ordinary Shares - Class A": "APP",
-  "Fortinet Inc": "FTNT",
-  "Cadence Design Systems Inc": "CDNS",
-  "DoorDash Inc Ordinary Shares - Class A": "DASH",
-  "PDD Holdings Inc ADR": "PDD",
-  "Constellation Energy Corp": "CEG",
-  "Synopsys Inc": "SNPS",
-  "Marriott International Inc Class A": "MAR",
-  "Regeneron Pharmaceuticals Inc": "REGN",
-  "PayPal Holdings Inc": "PYPL",
-  "ASML Holding NV ADR": "ASML",
-  "Roper Technologies Inc": "ROP",
-  "Copart Inc": "CPRT",
-  "Monster Beverage Corp": "MNST",
-  "American Electric Power Co Inc": "AEP",
-  "Autodesk Inc": "ADSK",
-  "CSX Corp": "CSX",
-  "Paychex Inc": "PAYX",
-  "Airbnb Inc Ordinary Shares - Class A": "ABNB",
-  "Workday Inc Class A": "WDAY",
-  "Charter Communications Inc Class A": "CHTR",
-  "Keurig Dr Pepper Inc": "KDP",
-  "Exelon Corp": "EXC",
-  "PACCAR Inc": "PCAR",
-  "Marvell Technology Inc": "MRVL",
-  "Fastenal Co": "FAST",
-  "NXP Semiconductors NV": "NXPI",
-  "Ross Stores Inc": "ROST",
-  "Axon Enterprise Inc": "AXON",
-  "Xcel Energy Inc": "XEL",
-  "Coca-Cola Europacific Partners PLC": "CCEP",
-  "Verisk Analytics Inc": "VRSK",
-  "AstraZeneca PLC ADR": "AZN",
-  "Diamondback Energy Inc": "FANG",
-  "Take-Two Interactive Software Inc": "TTWO",
-  "Electronic Arts Inc": "EA",
-  "The Kraft Heinz Co": "KHC",
-  "Baker Hughes Co Class A": "BKR",
-  "Cognizant Technology Solutions Corp Class A": "CTSH",
-  "IDEXX Laboratories Inc": "IDXX",
-  "Atlassian Corp A": "TEAM",
-  "CoStar Group Inc": "CSGP",
-  "Old Dominion Freight Line Inc Ordinary Shares": "ODFL",
-  "Lululemon Athletica Inc": "LULU",
-  "Zscaler Inc": "ZS",
-  "Datadog Inc Class A": "DDOG",
-  "GE HealthCare Technologies Inc Common Stock": "GEHC",
-  "Ansys Inc": "ANSS",
-  "DexCom Inc": "DXCM",
-  "The Trade Desk Inc Class A": "TTD",
-  "Microchip Technology Inc": "MCHP",
-  "CDW Corp": "CDW",
-  "Warner Bros. Discovery Inc Ordinary Shares - Class A": "WBD",
-  "GLOBALFOUNDRIES Inc": "GFS",
-  "Biogen Inc": "BIIB",
-  "ON Semiconductor Corp": "ON",
-  "ARM Holdings PLC ADR": "ARM",
-  "MongoDB Inc Class A": "MDB",
-};
+import { CACHE_INTERVAL, outputFile, tableBodyClass, tickerMap, url } from "./config";
+// @sparticuz/chromium provides a Chromium build compatible with Vercel's
+// serverless environment. We'll try to require it and use its executablePath
+// and recommended args when present.
+let chromium: any = null;
+try {
+  // require at runtime so local dev (without the package) still works
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  chromium = require("@sparticuz/chromium");
+} catch (err) {
+  chromium = null;
+}
 
 // Global variable to store the holdings data - same caching mechanism
 let holdingsData: any = null;
@@ -122,10 +24,35 @@ export async function scrapeQQQHoldingsTable(): Promise<any> {
   try {
     console.log(`Fetching holdings data from: ${url}`);
 
-    // Launch a headless browser - USING THE SAME CONFIGURATION THAT WORKS
-    browser = await puppeteer.launch({
+    // Launch a headless browser. In Vercel/serverless, use @sparticuz/chromium's
+    // executablePath and recommended args. Locally, fall back to puppeteer's
+    // bundled Chromium.
+    const launchOptions: any = {
       headless: true,
-    });
+      args: [
+        // These flags are generally required in many serverless environments
+        "--no-sandbox",
+        "--disable-setuid-sandbox",
+        "--disable-dev-shm-usage",
+        "--single-process",
+        "--disable-accelerated-2d-canvas",
+      ],
+    };
+
+    if (chromium && chromium.executablePath) {
+      launchOptions.executablePath = chromium.executablePath;
+      // If the chromium package exposes args, merge them
+      if (chromium.args && Array.isArray(chromium.args)) {
+        launchOptions.args = Array.from(new Set([...launchOptions.args, ...chromium.args]));
+      }
+      // On Vercel set headless to true (they run headless)
+      launchOptions.headless = chromium.headless ?? true;
+      console.log("Using @sparticuz/chromium for executablePath", chromium.executablePath);
+    } else {
+      console.log("@sparticuz/chromium not available; using puppeteer default");
+    }
+
+    browser = await puppeteer.launch(launchOptions);
 
     const page = await browser.newPage();
     await page.setViewport({ width: 1366, height: 768 });
