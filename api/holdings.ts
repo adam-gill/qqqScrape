@@ -1,8 +1,7 @@
-import { VercelRequest, VercelResponse } from '@vercel/node';
+import { VercelResponse } from '@vercel/node';
 import { getHoldingsData } from '../lib/scraper';
 
 export default async function handler(
-  request: VercelRequest,
   response: VercelResponse
 ) {
   try {

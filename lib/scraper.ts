@@ -1,26 +1,26 @@
 import * as fs from "fs";
-import puppeteer from "puppeteer-core";
-import chrome from "@sparticuz/chromium";
+import puppeteer from "puppeteer";
 
-// Configuration
+// Configuration - matching your working qqqScrape.ts
 const url = "https://www.invesco.com/qqq-etf/en/about.html";
 const tableBodyClass = "view-all-holdings__table-body";
+const outputFile = "qqq_holdings.json";
+const CACHE_INTERVAL = 3600000; // 1 hour in milliseconds
 
-// Define the ticker map
+// Define the ticker map - same as in qqqScrape.ts
 const tickerMap = {
   "Apple Inc": "AAPL",
   "Microsoft Corp": "MSFT",
   "NVIDIA Corp": "NVDA",
   "Amazon.com Inc": "AMZN",
   "Broadcom Inc": "AVGO",
-  "Meta Platforms Inc Class A": "META",
+  "Meta Platforms Inc": "META",
   "Netflix Inc": "NFLX",
   "Costco Wholesale Corp": "COST",
   "Tesla Inc": "TSLA",
-  "Alphabet Inc Class A": "GOOGL",
-  "Alphabet Inc Class C": "GOOG",
+  "Alphabet Inc": "GOOG",
   "T-Mobile US Inc": "TMUS",
-  "Palantir Technologies Inc Ordinary Shares - Class A": "PLTR",
+  "Palantir Technologies Inc": "PLTR",
   "Cisco Systems Inc": "CSCO",
   "Linde PLC": "LIN",
   "PepsiCo Inc": "PEP",
@@ -111,34 +111,19 @@ const tickerMap = {
   "MongoDB Inc Class A": "MDB",
 };
 
-// Cache mechanism
+// Global variable to store the holdings data - same caching mechanism
 let holdingsData: any = null;
 let lastFetchTime = 0;
-const CACHE_INTERVAL = 3600000; // 1 hour
 
-/**
- * Scrapes the QQQ ETF holdings table
- */
+// Use the EXACT same scraping function that works in qqqScrape.ts
 export async function scrapeQQQHoldingsTable(): Promise<any> {
   let browser = null;
 
   try {
     console.log(`Fetching holdings data from: ${url}`);
 
-    // Configure browser for Vercel serverless environment
-    const executablePath = await chrome.executablePath();
-
+    // Launch a headless browser - USING THE SAME CONFIGURATION THAT WORKS
     browser = await puppeteer.launch({
-      args: [
-        "--no-sandbox",
-        "--disable-setuid-sandbox",
-        "--disable-dev-shm-usage",
-        "--disable-gpu",
-        "--disable-features=IsolateOrigins,site-per-process",
-        "--single-process"
-      ],
-      ignoreDefaultArgs: ["--disable-extensions"],
-      executablePath,
       headless: true,
     });
 
@@ -171,16 +156,19 @@ export async function scrapeQQQHoldingsTable(): Promise<any> {
       const rows = Array.from(tableBody.querySelectorAll("tr"));
 
       return {
-        timestamp: new Date().toISOString(),
         itemCount: rows.length,
         items: rows.map((row, index) => {
           const companyCell = row.querySelector("td:first-child span");
           const percentCell = row.querySelector("td:last-child");
-          const companyName = companyCell ? companyCell.textContent.trim() : "";
+          const companyName = companyCell
+            ? companyCell.textContent?.trim()
+            : "";
           const percentText = percentCell
-            ? percentCell.textContent.trim()
+            ? percentCell.textContent?.trim()
             : "0%";
-          const percent = parseFloat(percentText.replace("%", "")) || 0;
+          const percent = percentText
+            ? parseFloat(percentText.replace("%", ""))
+            : 0;
 
           return {
             position: index + 1,
@@ -197,62 +185,60 @@ export async function scrapeQQQHoldingsTable(): Promise<any> {
     }
 
     // Add ticker symbols to each item
-    result.items = result.items.map((item: any) => {
+    result.items = result.items?.map((item) => {
       const companyName = item.company || "";
       return {
         ...item,
-        ticker:
-          companyName && tickerMap[companyName]
-            ? tickerMap[companyName]
-            : companyName,
+        ticker: companyName
+          ? tickerMap[companyName as keyof typeof tickerMap] || companyName
+          : "",
       };
     });
 
-    // Combine GOOG and GOOGL entries
-    let googIndex = -1;
-    let googlIndex = -1;
-    let googPercent = 0;
-    let googlPercent = 0;
-
     // Find both Google entries
-    result.items.forEach((item: any, index: number) => {
+    let totalGOOG = 0;
+    result.items?.forEach((item: { ticker: string; percent: number }) => {
       if (item.ticker === "GOOG") {
-        googIndex = index;
-        googPercent = item.percent;
-      } else if (item.ticker === "GOOGL") {
-        googlIndex = index;
-        googlPercent = item.percent;
+        totalGOOG += item.percent;
       }
     });
 
-    // If both exist, combine them
-    if (googIndex !== -1 && googlIndex !== -1) {
-      const totalPercent = googPercent + googlPercent;
+    // Create a new array without both Google entries
+    const filteredItems = result.items?.filter(
+      (item: { ticker: string; }) => item.ticker !== "GOOG"
+    );
 
-      // Create a new array without both Google entries
-      const filteredItems = result.items.filter(
-        (_: any, index: number) => index !== googIndex && index !== googlIndex
-      );
+    // Add the combined entry
+    filteredItems?.push({
+      position: filteredItems.length,
+      company: "Alphabet Inc",
+      ticker: "GOOG",
+      percent: totalGOOG,
+      id: "F00000SVTK",
+    });
 
-      // Add the combined entry
-      filteredItems.push({
-        position: filteredItems.length,
-        company: "Alphabet Inc Class C",
-        ticker: "GOOG",
-        percent: totalPercent,
-        id: result.items[googIndex].id,
-      });
+    // Sort by percentage (descending)
+    filteredItems?.sort(
+      (a: { percent: number }, b: { percent: number }) => b.percent - a.percent
+    );
 
-      // Sort by percentage (descending)
-      filteredItems.sort((a: any, b: any) => b.percent - a.percent);
+    // Update positions
+    result.items = filteredItems?.map((item, index) => ({
+      ...item,
+      position: index + 1,
+    }));
 
-      // Update positions
-      result.items = filteredItems.map((item: any, index: number) => ({
-        ...item,
-        position: index + 1,
-      }));
-    }
+    console.log(
+      `Combined GOOGand GOOGL into a single entry with ${totalGOOG}%`
+    );
 
+    // Save the data to file as backup
+    fs.writeFileSync(outputFile, JSON.stringify(result, null, 2));
+    console.log(
+      `Data saved to ${outputFile} with ${result?.items?.length} items`
+    );
+
+    // Return the result object for API use
     return result;
   } catch (error) {
     console.error("Error scraping QQQ holdings:", error);
@@ -265,7 +251,7 @@ export async function scrapeQQQHoldingsTable(): Promise<any> {
   }
 }
 
-// Function to get holdings data (with caching)
+// Function to get holdings data (with caching) - same as qqqScrape.ts
 export async function getHoldingsData(): Promise<any> {
   const currentTime = Date.now();
 
@@ -282,10 +268,21 @@ export async function getHoldingsData(): Promise<any> {
     lastFetchTime = currentTime;
     return holdingsData;
   } catch (error) {
+    // If there's an error fetching fresh data and we have cached data, use that
     if (holdingsData) {
       console.log("Error fetching fresh data, using cached data");
       return holdingsData;
     }
-    throw error;
+
+    // If we have no cached data, try to load from file
+    try {
+      const fileData = fs.readFileSync(outputFile, "utf8");
+      holdingsData = JSON.parse(fileData);
+      console.log("Loaded holdings data from file");
+      return holdingsData;
+    } catch (fileError) {
+      // If all else fails, throw the original error
+      throw error;
+    }
   }
 }
