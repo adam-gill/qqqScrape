@@ -109,3 +109,36 @@ export const url = "https://www.invesco.com/qqq-etf/en/about.html";
 export const tableBodyClass = "view-all-holdings__table-body";
 export const outputFile = "qqq_holdings.json";
 export const CACHE_INTERVAL = 3600000; // 1 hour in milliseconds
+
+export const agPicks = [
+  {
+    "company": "SoFi Technologies Inc",
+    "percent": 4.00,
+    "id": "994562333",
+    "ticker": "SOFI"
+  },
+  {
+    "company": "American Express Co",
+    "percent": 3.27,
+    "id": "230498230",
+    "ticker": "AXP"
+  },
+  {
+    "company": "Cisco Systems Inc",
+    "ticker": "CSCO",
+    "percent": 3.25,
+    "id": "239042039"
+  },
+  {
+    "company": "Citigroup Inc",
+    "ticker": "C",
+    "percent": 2.00,
+    "id": "087632323"
+  },
+  {
+    "company": "Lockheed Martin Corp",
+    "ticker": "LMT",
+    "percent": 1.50,
+    "id": "0938346322"
+  },
+]

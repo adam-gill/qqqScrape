@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <link rel="icon" href="/favicon.ico" sizes="48x48">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QQQ Portfolio Calculator</title>
+
+  <!-- SEO Meta Tags -->
+  <meta name="description" content="Calculate your QQQ ETF portfolio allocation with top holdings and AG picks. Get precise investment amounts for each stock based on your budget.">
+  <meta name="keywords" content="QQQ, ETF, portfolio calculator, investment, stock allocation, NASDAQ 100">
+
+  <!-- Open Graph Meta Tags -->
+  <meta property="og:title" content="QQQ Portfolio Calculator">
+  <meta property="og:description" content="Calculate your QQQ ETF portfolio allocation with top holdings and AG picks. Get precise investment amounts for each stock based on your budget.">
+  <meta property="og:type" content="website">
+  <meta property="og:image" content="/favicon.ico">
+  <meta property="og:image:width" content="48">
+  <meta property="og:image:height" content="48">
+
+  <!-- Twitter Card Meta Tags -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="QQQ Portfolio Calculator">
+  <meta name="twitter:description" content="Calculate your QQQ ETF portfolio allocation with top holdings and AG picks.">
+  <meta name="twitter:image" content="/favicon.ico">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #0a0a0a;
+      color: #e0e0e0;
+      padding: 40px 20px;
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      font-size: 24px;
+      font-weight: 600;
+      margin-bottom: 30px;
+      text-align: center;
+    }
+
+    .controls {
+      background: #1a1a1a;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+
+    .control-group {
+      margin-bottom: 15px;
+    }
+
+    .control-group:last-child {
+      margin-bottom: 0;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    input[type="number"] {
+      width: 100%;
+      padding: 12px;
+      background: #0a0a0a;
+      border: 1px solid #333;
+      border-radius: 6px;
+      color: #e0e0e0;
+      font-family: 'Inter', sans-serif;
+      font-size: 16px;
+    }
+
+    input[type="number"]:focus {
+      outline: none;
+      border-color: #4a90e2;
+    }
+
+    .checkbox-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      cursor: pointer;
+    }
+
+    .checkbox-group label {
+      margin-bottom: 0;
+      cursor: pointer;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: #1a1a1a;
+      border-radius: 8px;
+      overflow: hidden;
+      margin-bottom: 20px;
+    }
+
+    thead {
+      background: #0a0a0a;
+    }
+
+    th {
+      padding: 12px;
+      text-align: left;
+      font-weight: 600;
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    th:last-child {
+      text-align: center;
+    }
+
+    td {
+      padding: 12px;
+      border-top: 1px solid #2a2a2a;
+      font-size: 14px;
+    }
+
+    td:last-child {
+      text-align: center;
+    }
+
+    .ag-picks-separator {
+      background: #0a0a0a;
+      font-weight: 600;
+      text-transform: uppercase;
+      font-size: 12px;
+      letter-spacing: 0.5px;
+      text-align: center;
+    }
+
+    .ticker {
+      font-weight: 600;
+      font-family: 'Courier New', monospace;
+    }
+
+    .amount {
+      font-weight: 600;
+      color: #4a90e2;
+    }
+
+    .info {
+      background: #1a1a1a;
+      padding: 15px 20px;
+      border-radius: 8px;
+      font-size: 13px;
+      color: #888;
+    }
+
+    .info strong {
+      color: #e0e0e0;
+    }
+
+    input[type="checkbox"]:not(.row-checkbox) {
+      accent-color: #4a90e2;
+    }
+
+    .row-checkbox {
+      width: 16px;
+      height: 16px;
+      cursor: pointer;
+      accent-color: #4a90e2;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 40px;
+      font-size: 14px;
+      color: #888;
+    }
+
+    .error {
+      background: #2a1a1a;
+      color: #ff6b6b;
+      padding: 20px;
+      border-radius: 8px;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    /* Skeleton Loading Styles */
+    .skeleton {
+      background: linear-gradient(90deg, #2a2a2a 25%, #333 50%, #2a2a2a 75%);
+      background-size: 200% 100%;
+      animation: skeleton-loading 1.5s ease-in-out infinite;
+      border-radius: 4px;
+      height: 16px;
+    }
+
+    @keyframes skeleton-loading {
+      0% {
+        background-position: 200% 0;
+      }
+      100% {
+        background-position: -200% 0;
+      }
+    }
+
+    .skeleton-row td {
+      padding: 12px;
+      border-top: 1px solid #2a2a2a;
+    }
+
+    .skeleton-ticker {
+      width: 60px;
+    }
+
+    .skeleton-percent {
+      width: 50px;
+    }
+
+    .skeleton-amount {
+      width: 80px;
+    }
+
+    .skeleton-checkbox {
+      width: 16px;
+      height: 16px;
+      background: #2a2a2a;
+      border-radius: 3px;
+      margin: 0 auto;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>QQQ Portfolio Calculator</h1>
+
+    <div class="controls">
+      <div class="control-group">
+        <label for="investment">Investment Amount:</label>
+        <input type="number" id="investment" placeholder="Enter amount (e.g., 367.12)" step="0.01" min="0">
+      </div>
+      <div class="control-group">
+        <div class="checkbox-group">
+          <input type="checkbox" id="includeAgPicks" checked>
+          <label for="includeAgPicks">Include AG Picks</label>
+        </div>
+      </div>
+    </div>
+
+    <div id="error" class="error" style="display: none;"></div>
+
+    <table id="tableContainer">
+      <thead>
+        <tr>
+          <th>TICKER</th>
+          <th>QQQ %</th>
+          <th>AG %</th>
+          <th>$ TO BUY</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="tableBody">
+        <!-- Skeleton loading rows -->
+        <tr class="skeleton-row">
+          <td><div class="skeleton skeleton-ticker"></div></td>
+          <td><div class="skeleton skeleton-percent"></div></td>
+          <td><div class="skeleton skeleton-percent"></div></td>
+          <td><div class="skeleton skeleton-amount"></div></td>
+          <td><div class="skeleton-checkbox"></div></td>
+        </tr>
+        <tr class="skeleton-row">
+          <td><div class="skeleton skeleton-ticker"></div></td>
+          <td><div class="skeleton skeleton-percent"></div></td>
+          <td><div class="skeleton skeleton-percent"></div></td>
+          <td><div class="skeleton skeleton-amount"></div></td>
+          <td><div class="skeleton-checkbox"></div></td>
+        </tr>
+        <tr class="skeleton-row">
+          <td><div class="skeleton skeleton-ticker"></div></td>
+          <td><div class="skeleton skeleton-percent"></div></td>
+          <td><div class="skeleton skeleton-percent"></div></td>
+          <td><div class="skeleton skeleton-amount"></div></td>
+          <td><div class="skeleton-checkbox"></div></td>
+        </tr>
+        <tr class="skeleton-row">
+          <td><div class="skeleton skeleton-ticker"></div></td>
+          <td><div class="skeleton skeleton-percent"></div></td>
+          <td><div class="skeleton skeleton-percent"></div></td>
+          <td><div class="skeleton skeleton-amount"></div></td>
+          <td><div class="skeleton-checkbox"></div></td>
+        </tr>
+        <tr class="skeleton-row">
+          <td><div class="skeleton skeleton-ticker"></div></td>
+          <td><div class="skeleton skeleton-percent"></div></td>
+          <td><div class="skeleton skeleton-percent"></div></td>
+          <td><div class="skeleton skeleton-amount"></div></td>
+          <td><div class="skeleton-checkbox"></div></td>
+        </tr>
+        <tr class="skeleton-row">
+          <td><div class="skeleton skeleton-ticker"></div></td>
+          <td><div class="skeleton skeleton-percent"></div></td>
+          <td><div class="skeleton skeleton-percent"></div></td>
+          <td><div class="skeleton skeleton-amount"></div></td>
+          <td><div class="skeleton-checkbox"></div></td>
+        </tr>
+        <tr class="skeleton-row">
+          <td><div class="skeleton skeleton-ticker"></div></td>
+          <td><div class="skeleton skeleton-percent"></div></td>
+          <td><div class="skeleton skeleton-percent"></div></td>
+          <td><div class="skeleton skeleton-amount"></div></td>
+          <td><div class="skeleton-checkbox"></div></td>
+        </tr>
+        <tr class="skeleton-row">
+          <td><div class="skeleton skeleton-ticker"></div></td>
+          <td><div class="skeleton skeleton-percent"></div></td>
+          <td><div class="skeleton skeleton-percent"></div></td>
+          <td><div class="skeleton skeleton-amount"></div></td>
+          <td><div class="skeleton-checkbox"></div></td>
+        </tr>
+        <tr class="skeleton-row">
+          <td><div class="skeleton skeleton-ticker"></div></td>
+          <td><div class="skeleton skeleton-percent"></div></td>
+          <td><div class="skeleton skeleton-percent"></div></td>
+          <td><div class="skeleton skeleton-amount"></div></td>
+          <td><div class="skeleton-checkbox"></div></td>
+        </tr>
+        <tr class="skeleton-row">
+          <td><div class="skeleton skeleton-ticker"></div></td>
+          <td><div class="skeleton skeleton-percent"></div></td>
+          <td><div class="skeleton skeleton-percent"></div></td>
+          <td><div class="skeleton skeleton-amount"></div></td>
+          <td><div class="skeleton-checkbox"></div></td>
+        </tr>
+        <tr class="skeleton-row">
+          <td><div class="skeleton skeleton-ticker"></div></td>
+          <td><div class="skeleton skeleton-percent"></div></td>
+          <td><div class="skeleton skeleton-percent"></div></td>
+          <td><div class="skeleton skeleton-amount"></div></td>
+          <td><div class="skeleton-checkbox"></div></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="info">
+      <strong>Last Updated:</strong> <span id="lastUpdated">-</span>
+    </div>
+  </div>
+
+  <script>
+    let holdingsData = null;
+    let agPicksData = null;
+
+    async function fetchData() {
+      try {
+        const response = await fetch('/api/holdings');
+        if (!response.ok) {
+          throw new Error('Failed to fetch data');
+        }
+        const data = await response.json();
+        holdingsData = data.items?.slice(0, 11) || [];
+        agPicksData = data.agPicks || [];
+
+        // Format and display last updated
+        const lastUpdated = new Date(data.lastUpdated);
+        document.getElementById('lastUpdated').textContent = lastUpdated.toLocaleString('en-US', {
+          month: '2-digit',
+          day: '2-digit',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+          hour12: false
+        });
+
+        renderTable();
+      } catch (error) {
+        console.error('Error fetching data:', error);
+        document.getElementById('error').style.display = 'block';
+        document.getElementById('error').textContent = 'Failed to load data. Please try again later.';
+        document.getElementById('tableContainer').style.display = 'none';
+      }
+    }
+
+    function calculateWeights() {
+      const includeAgPicks = document.getElementById('includeAgPicks').checked;
+      const stocks = [...holdingsData];
+
+      if (includeAgPicks) {
+        stocks.push(...agPicksData);
+      }
+
+      // Calculate total percentage
+      const totalPercent = stocks.reduce((sum, stock) => sum + stock.percent, 0);
+
+      // Calculate normalized weights
+      return stocks.map(stock => ({
+        ...stock,
+        weight: (stock.percent / totalPercent) * 100
+      }));
+    }
+
+    function renderTable() {
+      const includeAgPicks = document.getElementById('includeAgPicks').checked;
+      const investmentAmount = parseFloat(document.getElementById('investment').value) || 0;
+      const weights = calculateWeights();
+
+      const tbody = document.getElementById('tableBody');
+
+      // Clear skeleton rows and existing content
+      tbody.innerHTML = '';
+
+      // Render top 11 holdings
+      weights.slice(0, 11).forEach(stock => {
+        const row = createStockRow(stock, investmentAmount);
+        tbody.appendChild(row);
+      });
+
+      // Render AG Picks if included
+      if (includeAgPicks && weights.length > 11) {
+        const separatorRow = document.createElement('tr');
+        separatorRow.innerHTML = '<td colspan="5" class="ag-picks-separator">AG Picks</td>';
+        tbody.appendChild(separatorRow);
+
+        weights.slice(11).forEach(stock => {
+          const row = createStockRow(stock, investmentAmount);
+          tbody.appendChild(row);
+        });
+      }
+    }
+
+    function createStockRow(stock, investmentAmount) {
+      const row = document.createElement('tr');
+      const amount = (stock.weight / 100) * investmentAmount;
+
+      row.innerHTML = `
+        <td class="ticker">${stock.ticker}</td>
+        <td>${stock.percent.toFixed(2)}%</td>
+        <td>${stock.weight.toFixed(2)}%</td>
+        <td class="amount">$${amount.toFixed(2)}</td>
+        <td><input type="checkbox" class="row-checkbox"></td>
+      `;
+
+      return row;
+    }
+
+    // Event listeners
+    document.getElementById('investment').addEventListener('input', renderTable);
+    document.getElementById('includeAgPicks').addEventListener('change', renderTable);
+
+    // Initial fetch
+    fetchData();
+  </script>
+</body>
+</html>

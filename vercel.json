@@ -14,6 +14,10 @@
     {
       "src": "/health",
       "dest": "/api/health"
+    },
+    {
+      "src": "/",
+      "dest": "/public/index.html"
     }
   ]
 }

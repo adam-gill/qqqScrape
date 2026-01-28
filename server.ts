@@ -1,7 +1,8 @@
 import express from "express";
 import cors from "cors";
 import { getHoldingsData } from "./lib/scraper";
-
+import { agPicks } from "./lib/config";
+import path from "path";
 
 const PORT = process.env.PORT || 3000;
 
@@ -10,6 +11,9 @@ const app = express();
 
 // Enable CORS
 app.use(cors());
+
+// Serve static files from public directory
+app.use(express.static(path.join(__dirname, "public")));
 
 // Add request logging middleware
 app.use((req, res, next) => {
@@ -21,7 +25,12 @@ app.use((req, res, next) => {
 app.get("/holdings", async (req, res) => {
   try {
     const data = await getHoldingsData();
-    res.json(data);
+    const responseData = {
+      ...data,
+      agPicks,
+      lastUpdated: new Date().toISOString()
+    };
+    res.json(responseData);
   } catch (error: any) {
     res
       .status(500)
@@ -37,7 +46,12 @@ app.get("/health", (req, res) => {
 app.get("/api/holdings", async (req, res) => {
   try {
     const data = await getHoldingsData();
-    res.json(data);
+    const responseData = {
+      ...data,
+      agPicks,
+      lastUpdated: new Date().toISOString()
+    };
+    res.json(responseData);
   } catch (error: any) {
     res
       .status(500)

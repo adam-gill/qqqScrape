@@ -131,7 +131,6 @@ export async function scrapeQQQHoldingsTable(): Promise<any> {
           : "",
       };
     });
-    console.log(result.items.slice(0, 20));
 
     // Find both Google entries
     let totalGOOG = 0;
