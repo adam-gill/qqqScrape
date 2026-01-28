@@ -122,7 +122,7 @@ export async function scrapeQQQHoldingsTable(): Promise<any> {
     }
 
     // Add ticker symbols to each item
-    result.items = result.items?.map((item) => {
+    result.items = result.items?.map((item: { company: string; }) => {
       const companyName = item.company || "";
       return {
         ...item,
@@ -131,18 +131,19 @@ export async function scrapeQQQHoldingsTable(): Promise<any> {
           : "",
       };
     });
+    console.log(result.items.slice(0, 20));
 
     // Find both Google entries
     let totalGOOG = 0;
     result.items?.forEach((item: { ticker: string; percent: number }) => {
-      if (item.ticker === "GOOG") {
+      if (item.ticker.startsWith("GOOG")) {
         totalGOOG += item.percent;
       }
     });
 
     // Create a new array without both Google entries
     const filteredItems = result.items?.filter(
-      (item: { ticker: string; }) => item.ticker !== "GOOG"
+      (item: { ticker: string; }) => !item.ticker.startsWith("GOOG")
     );
 
     // Add the combined entry
@@ -160,7 +161,7 @@ export async function scrapeQQQHoldingsTable(): Promise<any> {
     );
 
     // Update positions
-    result.items = filteredItems?.map((item, index) => ({
+    result.items = filteredItems?.map((item: any, index: number) => ({
       ...item,
       position: index + 1,
     }));

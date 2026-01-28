@@ -1,1 +1,1 @@
-# lebron
+# simple, vibe-coded api to fetch current qqq holdings
