@@ -1,8 +1,9 @@
-import { VercelResponse } from '@vercel/node';
+import { VercelRequest, VercelResponse } from '@vercel/node';
 import { getHoldingsData } from '../lib/scraper';
 import { agPicks } from '../lib/config';
 
 export default async function handler(
+  request: VercelRequest,
   response: VercelResponse
 ) {
   try {
