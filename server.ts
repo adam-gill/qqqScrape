@@ -13,7 +13,11 @@ const app = express();
 app.use(cors());
 
 // Serve static files from public directory
-app.use(express.static(path.join(__dirname, "public")));
+// In production (compiled), __dirname is 'dist', so go up one level
+const publicPath = process.env.NODE_ENV === 'production'
+  ? path.join(__dirname, "..", "public")
+  : path.join(__dirname, "public");
+app.use(express.static(publicPath));
 
 // Add request logging middleware
 app.use((req, res, next) => {
@@ -24,11 +28,11 @@ app.use((req, res, next) => {
 // API endpoints - directly implement them the same way as in qqqScrape.ts
 app.get("/holdings", async (req, res) => {
   try {
-    const data = await getHoldingsData();
+    const result = await getHoldingsData();
     const responseData = {
-      ...data,
+      ...result.data,
       agPicks,
-      lastUpdated: new Date().toISOString()
+      lastUpdated: new Date(result.fetchedAt).toISOString()
     };
     res.json(responseData);
   } catch (error: any) {
@@ -42,14 +46,14 @@ app.get("/health", (req, res) => {
   res.json({ status: "OK", timestamp: new Date().toISOString() });
 });
 
-// Also support the /api/* routes for compatibility with Vercel
+// Also support the /api/* routes for compatibility
 app.get("/api/holdings", async (req, res) => {
   try {
-    const data = await getHoldingsData();
+    const result = await getHoldingsData();
     const responseData = {
-      ...data,
+      ...result.data,
       agPicks,
-      lastUpdated: new Date().toISOString()
+      lastUpdated: new Date(result.fetchedAt).toISOString()
     };
     res.json(responseData);
   } catch (error: any) {
@@ -61,6 +65,11 @@ app.get("/api/holdings", async (req, res) => {
 
 app.get("/api/health", (req, res) => {
   res.json({ status: "OK", timestamp: new Date().toISOString() });
+});
+
+// Explicit handler for root path (fallback if static serving doesn't work)
+app.get("/", (req, res) => {
+  res.sendFile(path.join(publicPath, "index.html"));
 });
 
 // Start server

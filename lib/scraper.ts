@@ -1,27 +1,6 @@
-import { CACHE_INTERVAL, outputFile, tableBodyClass, tickerMap, url } from "./config";
-
-// Import puppeteer-core instead of puppeteer for serverless
-let puppeteer: any;
-let chromium: any = null;
-
-try {
-  // Try to use puppeteer-core for production
-  puppeteer = require("puppeteer-core");
-} catch (err) {
-  // Fall back to regular puppeteer for local development
-  puppeteer = require("puppeteer");
-}
-
-try {
-  // require at runtime so local dev (without the package) still works
-  chromium = require("@sparticuz/chromium");
-} catch (err) {
-  chromium = null;
-}
-
-// Global variable to store the holdings data - same caching mechanism
-let holdingsData: any = null;
-let lastFetchTime = 0;
+import { tableBodyClass, tickerMap, url } from "./config";
+import { getCachedHoldings, setCachedHoldings } from "./cache";
+import puppeteer from "puppeteer";
 
 // Use the EXACT same scraping function that works in qqqScrape.ts
 export async function scrapeQQQHoldingsTable(): Promise<any> {
@@ -30,38 +9,19 @@ export async function scrapeQQQHoldingsTable(): Promise<any> {
   try {
     console.log(`Fetching holdings data from: ${url}`);
 
-    const launchOptions: any = {
+    const launchOptions = {
       headless: true,
+      executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined,
       args: [
         "--no-sandbox",
         "--disable-setuid-sandbox",
         "--disable-dev-shm-usage",
-        "--single-process",
         "--disable-accelerated-2d-canvas",
         "--disable-gpu",
       ],
     };
 
-    // Use chromium package in production (Vercel)
-    if (chromium && chromium.executablePath) {
-      try {
-        const executablePath = await chromium.executablePath();
-        launchOptions.executablePath = executablePath;
-        
-        if (chromium.args && Array.isArray(chromium.args)) {
-          launchOptions.args = Array.from(new Set([...launchOptions.args, ...chromium.args]));
-        }
-        
-        launchOptions.headless = chromium.headless ?? true;
-        console.log("Using @sparticuz/chromium with executablePath:", executablePath);
-      } catch (chromiumError) {
-        console.error("Error getting chromium executablePath:", chromiumError);
-        throw new Error("Failed to initialize Chromium for serverless environment");
-      }
-    } else {
-      console.log("@sparticuz/chromium not available; using puppeteer default");
-    }
-
+    console.log("Launching Puppeteer with Chromium");
     browser = await puppeteer.launch(launchOptions);
 
     const page = await browser.newPage();
@@ -182,27 +142,45 @@ export async function scrapeQQQHoldingsTable(): Promise<any> {
   }
 }
 
-// Function to get holdings data (with caching) - same as qqqScrape.ts
-export async function getHoldingsData(): Promise<any> {
-  const currentTime = Date.now();
+// Function to get holdings data (with SQLite caching - 24 hour validity)
+export async function getHoldingsData(): Promise<{ data: any; fetchedAt: number }> {
+  // Try to get cached data from SQLite
+  const cachedEntry = getCachedHoldings();
 
-  // If we have cached data and it's less than CACHE_INTERVAL old, use it
-  if (holdingsData && currentTime - lastFetchTime < CACHE_INTERVAL) {
-    console.log("Using cached holdings data");
-    return holdingsData;
+  if (cachedEntry) {
+    console.log("Using cached holdings data from database");
+    return {
+      data: cachedEntry.data,
+      fetchedAt: cachedEntry.fetched_at
+    };
   }
 
   // Otherwise, fetch fresh data
   try {
-    console.log("Fetching fresh holdings data");
-    holdingsData = await scrapeQQQHoldingsTable();
-    lastFetchTime = currentTime;
-    return holdingsData;
+    console.log("Fetching fresh holdings data from web");
+    const freshData = await scrapeQQQHoldingsTable();
+
+    // Cache the fresh data in SQLite
+    const fetchedAt = Date.now();
+    setCachedHoldings(freshData);
+
+    return {
+      data: freshData,
+      fetchedAt
+    };
   } catch (error) {
-    // If there's an error fetching fresh data and we have cached data, use that
-    if (holdingsData) {
-      console.log("Error fetching fresh data, using cached data");
-      return holdingsData;
+    console.error("Error fetching fresh holdings data:", error);
+
+    // If there's an error, try to return stale cached data if available
+    const staleCache = getCachedHoldings();
+    if (staleCache) {
+      console.log("Error fetching fresh data, using stale cached data");
+      return {
+        data: staleCache.data,
+        fetchedAt: staleCache.fetched_at
+      };
     }
+
+    throw error;
   }
 }

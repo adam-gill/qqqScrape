@@ -2,3 +2,11 @@ node_modules
 qqq_holdings_raw.html
 qqq_holdings.json
 .vercel
+.env
+.env*
+data/
+*.db
+*.db-journal
+*.db-shm
+*.db-wal
+dist/
