@@ -3,6 +3,7 @@ import cors from "cors";
 import { getHoldingsData } from "./lib/scraper";
 import { agPicks } from "./lib/config";
 import path from "path";
+import { clearCache } from "./lib/cache";
 
 const PORT = process.env.PORT || 3000;
 
@@ -65,6 +66,17 @@ app.get("/api/holdings", async (req, res) => {
 
 app.get("/api/health", (req, res) => {
   res.json({ status: "OK", timestamp: new Date().toISOString() });
+});
+
+app.get("/api/clear-cache", (req, res) => {
+  try {
+    clearCache();
+    res.json({ status: "Cache cleared", timestamp: new Date().toISOString() });
+  } catch (error: any) {
+    res
+      .status(500)
+      .json({ error: "Failed to clear cache", message: error.message });
+  }
 });
 
 // Explicit handler for root path (fallback if static serving doesn't work)
