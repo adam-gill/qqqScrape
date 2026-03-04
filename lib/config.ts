@@ -118,6 +118,12 @@ export const agPicks = [
     "ticker": "SOFI"
   },
   {
+    "company": "Lockheed Martin Corp",
+    "percent": 3.75,
+    "id": "483932321",
+    "ticker": "LMT"
+  }, 
+  {
     "company": "American Express Co",
     "percent": 3.27,
     "id": "230498230",
@@ -134,11 +140,5 @@ export const agPicks = [
     "ticker": "C",
     "percent": 2.00,
     "id": "087632323"
-  },
-  {
-    "company": "Lockheed Martin Corp",
-    "ticker": "LMT",
-    "percent": 1.50,
-    "id": "0938346322"
   },
 ]

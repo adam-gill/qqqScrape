@@ -93,6 +93,17 @@ export function closeDb(): void {
   }
 }
 
+export function clearCache(): void {
+  try {
+    const database = getDb();
+    database.prepare("DELETE FROM holdings_cache").run();
+    console.log("Cache cleared successfully");
+  } catch (error) {
+    console.error("Error clearing cache:", error);
+  }
+}
+
+
 // Handle graceful shutdown
 process.on("SIGINT", () => {
   closeDb();
