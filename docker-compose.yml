@@ -6,7 +6,7 @@ services:
     container_name: agqqq
     restart: unless-stopped
     ports:
-      - "3000:3000"
+      - "3003:3000"
     dns:
       - 1.1.1.1
       - 9.9.9.9

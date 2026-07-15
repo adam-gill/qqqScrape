@@ -21,5 +21,9 @@
     "@types/express": "^5.0.6",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3"
+  },
+  "allowScripts": {
+    "better-sqlite3@12.6.2": true,
+    "puppeteer@24.37.2": true
   }
 }
